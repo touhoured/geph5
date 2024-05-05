@@ -33,12 +33,11 @@ jobs:
         if: matrix.dir == 'musl'
         run: sudo apt-get install -y musl-tools
 
-      - run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
-          rustup target add ${{ matrix.target }}
+      - name: Install Cross
+        uses: taiki-e/install-action@cross
 
       - name: Build client
-        run: cargo build --locked --release --target ${{ matrix.target }} --manifest-path binaries/geph5-client/Cargo.toml
+        run: cross build --locked --release --target ${{ matrix.target }} --manifest-path binaries/geph5-client/Cargo.toml
 
       - name: Move client binaries to artifacts directory
         shell: bash
