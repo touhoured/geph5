@@ -29,6 +29,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Set default host
+        shell: bash
+        run: rustup set default-host ${{ matrix.target }}
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+
       - name: Install musl-tools (Linux)
         if: matrix.dir == 'musl'
         run: sudo apt-get install -y musl-tools
