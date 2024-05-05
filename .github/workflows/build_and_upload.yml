@@ -35,7 +35,7 @@ jobs:
 
       - run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
-          rustup target add ${{ matrix.os }}
+          rustup target add ${{ matrix.target }}
 
       - name: Build client
         run: cargo build --locked --release --target ${{ matrix.target }} --manifest-path binaries/geph5-client/Cargo.toml
