@@ -36,10 +36,6 @@ jobs:
       - name: Install Cross
         uses: taiki-e/install-action@cross
 
-      - name: Set default host
-        shell: bash
-        run: rustup set default-host ${{ matrix.target }}
-
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
 
