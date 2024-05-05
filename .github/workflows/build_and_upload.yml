@@ -33,8 +33,9 @@ jobs:
         if: matrix.dir == 'musl'
         run: sudo apt-get install -y musl-tools
 
-      - name: Install Cross
-        uses: taiki-e/install-action@cross
+      - uses: taiki-e/install-action@v2.31.0
+        with:
+          tool: cross,cargo-minimal-versions
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
