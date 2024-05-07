@@ -38,6 +38,7 @@ jobs:
         with:
           toolchain: stable
           target: ${{ matrix.target }}
+          rustflags: '-A dead_code'
 
       - name: Set default host
         shell: bash
