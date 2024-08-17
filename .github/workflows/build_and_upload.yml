@@ -59,7 +59,7 @@ jobs:
         run: cross build --locked --release --target ${{ matrix.target }} --manifest-path binaries/geph5-client/Cargo.toml
 
       - name: Build client
-        if: matrix.dir == 'aarch64-unknown-linux-musl'
+        if: matrix.dir != 'aarch64-unknown-linux-musl'
         run: cargo build --locked --release --target ${{ matrix.target }} --manifest-path binaries/geph5-client/Cargo.toml
 
       - name: Move client binaries to artifacts directory
