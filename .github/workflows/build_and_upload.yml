@@ -51,15 +51,15 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Install Cross
-        if: ${{ matrix.target }} == aarch64-unknown-linux-musl
+        if: matrix.target == "aarch64-unknown-linux-musl"
         uses: taiki-e/install-action@cross
 
       - name: Build client
-        if: ${{ matrix.target }} == aarch64-unknown-linux-musl
+        if: matrix.target == "aarch64-unknown-linux-musl"
         run: cross build --locked --release --target ${{ matrix.target }} --manifest-path binaries/geph5-client/Cargo.toml
 
       - name: Build client
-        if: ${{ matrix.target }} != aarch64-unknown-linux-musl
+        if: matrix.target != "aarch64-unknown-linux-musl"
         run: cargo build --locked --release --target ${{ matrix.target }} --manifest-path binaries/geph5-client/Cargo.toml
 
       - name: Move client binaries to artifacts directory
