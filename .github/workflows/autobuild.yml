@@ -1,0 +1,80 @@
+name: Geph5 autobuild
+
+on:
+  schedule:
+    - cron: '17 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: geph5-autobuild
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    outputs:
+      packages: ${{ steps.check.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          packages=$(bash scripts/autobuild.sh check)
+          echo "packages=$packages" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: check
+    if: needs.check.outputs.packages != '[]'
+    runs-on: ${{ startsWith(matrix.platform, 'windows-') && 'windows-2025' || 'ubuntu-24.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.check.outputs.packages) }}
+        platform: [windows-x86, windows-x64, linux-musl-x64, linux-musl-arm64]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - shell: bash
+        env:
+          CRATE: ${{ matrix.package.crate }}
+          VERSION: ${{ matrix.package.version }}
+          PLATFORM: ${{ matrix.platform }}
+        run: bash scripts/autobuild.sh build "$CRATE" "$VERSION" "$PLATFORM"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.package.crate }}-v${{ matrix.package.version }}-${{ matrix.platform }}
+          path: dist/${{ matrix.package.crate }}-v${{ matrix.package.version }}/*
+          if-no-files-found: error
+          overwrite: true
+
+  release:
+    needs: [check, build]
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.check.outputs.packages != '[]' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.check.outputs.packages) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ${{ matrix.package.crate }}-v${{ matrix.package.version }}-*
+          path: dist/${{ matrix.package.crate }}-v${{ matrix.package.version }}
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          CRATE: ${{ matrix.package.crate }}
+          VERSION: ${{ matrix.package.version }}
+        run: bash scripts/autobuild.sh release "$CRATE" "$VERSION"
