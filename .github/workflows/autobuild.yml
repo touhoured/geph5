@@ -31,25 +31,32 @@ jobs:
   build:
     needs: check
     if: needs.check.outputs.packages != '[]'
-    runs-on: ${{ startsWith(matrix.platform, 'windows-') && 'windows-2025' || 'ubuntu-24.04' }}
+    runs-on: ${{ endsWith(matrix.target, '-windows-msvc') && 'windows-2025' || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
         package: ${{ fromJSON(needs.check.outputs.packages) }}
-        platform: [windows-x86, windows-x64, linux-musl-x64, linux-musl-arm64]
+        target:
+          - i686-pc-windows-msvc
+          - x86_64-pc-windows-msvc
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Install cross
+        if: runner.os == 'Linux'
+        run: cargo install cross
       - shell: bash
         env:
           CRATE: ${{ matrix.package.crate }}
           VERSION: ${{ matrix.package.version }}
-          PLATFORM: ${{ matrix.platform }}
-        run: bash scripts/autobuild.sh build "$CRATE" "$VERSION" "$PLATFORM"
+          TARGET: ${{ matrix.target }}
+        run: bash scripts/autobuild.sh build "$CRATE" "$VERSION" "$TARGET"
       - uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.package.crate }}-v${{ matrix.package.version }}-${{ matrix.platform }}
+          name: ${{ matrix.package.crate }}-v${{ matrix.package.version }}-${{ matrix.target }}
           path: dist/${{ matrix.package.crate }}-v${{ matrix.package.version }}/*
           if-no-files-found: error
           overwrite: true
