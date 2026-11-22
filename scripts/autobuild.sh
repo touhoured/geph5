@@ -75,9 +75,29 @@ build() (
     echo "$directory/$asset"
 )
 
+release_notes() {
+    local crate=$1 version=$2 upstream=https://github.com/geph-official/geph5
+    local refs ref tag previous=
+    refs=$(git ls-remote --refs --sort=version:refname "$upstream" "refs/tags/$crate-v*") || return
+    while read -r _ ref; do
+        tag=${ref#refs/tags/}
+        [[ ${tag#"$crate-v"} =~ $stable_version ]] || continue
+        if [[ $tag == "$crate-v$version" ]]; then
+            if [[ -n $previous ]]; then
+                echo "[Upstream changes]($upstream/compare/$previous...$tag)"
+            else
+                echo "[Upstream source]($upstream/tree/$tag)"
+            fi
+            return
+        fi
+        previous=$tag
+    done <<< "$refs"
+    echo "https://crates.io/crates/$crate/$version"
+}
+
 release() {
     local crate=$1 version=$2
-    local tag="$crate-v$version" binary repo published target path
+    local tag="$crate-v$version" binary repo published target path notes
     local -a files=() target_args=()
     binary=$(package_binary "$crate" "$version")
     repo=$(repository)
@@ -93,8 +113,9 @@ release() {
         files+=("$path")
     done
     if [[ -n ${GITHUB_SHA:-} ]]; then target_args=(--target "$GITHUB_SHA"); fi
+    notes=$(release_notes "$crate" "$version")
     gh release create "$tag" "${files[@]}" --repo "$repo" --title "$tag" \
-        --notes "https://crates.io/crates/$crate/$version" "${target_args[@]}"
+        --notes "$notes" "${target_args[@]}"
 }
 
 case "${1:-}/$#" in
