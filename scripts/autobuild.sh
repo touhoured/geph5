@@ -29,7 +29,7 @@ published_tags() {
 }
 
 check() {
-    local repo published crate version
+    local repo published crate version released
     repo=$(repository)
     published=$(published_tags "$repo")
     for crate in geph5-client geph5-app; do
@@ -37,8 +37,9 @@ check() {
             "https://crates.io/api/v1/crates/$crate?include=default_version" |
             jq -r '.versions[0] | select(.yanked == false) | .num')
         [[ $version =~ $stable_version ]] || continue
-        grep -Fxq "$crate-v$version" <<< "$published" && continue
-        jq -nc --arg crate "$crate" --arg version "$version" '{$crate, $version}'
+        released=false
+        if grep -Fxq "$crate-v$version" <<< "$published"; then released=true; fi
+        jq -nc --arg crate "$crate" --arg version "$version" --argjson released "$released" '{$crate, $version, $released}'
     done | jq -cs .
 }
 
